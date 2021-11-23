@@ -1,9 +1,15 @@
 import Todo from "domain/entities/Todo"
+import { useState } from "react"
 
 import { useAppDispatch, useAppSelector } from "../app/redux/hooks"
-import { fetchList } from "../app/redux/todo/asyncTodo.slice"
+import { fetchList, StoreTodo, DeleteTodo, UpdateTodo } from "../app/redux/todo/asyncTodo.slice"
 
 export default function Home() {
+    const [todo, setTodo] = useState('')
+    const [isEdit, setIsEdit] = useState(false)
+    const [toEdit, setToEdit] = useState(null)
+
+
     const { asyncTodos, loading, syncTodos } = useAppSelector((state) => ({
         asyncTodos: state.asyncTodoSlice.asyncTodos,
         loading: state.asyncTodoSlice.loading,
@@ -14,6 +20,36 @@ export default function Home() {
 
     const handleClick = () => {
         dispatch(fetchList())
+        setIsEdit(false)
+        setToEdit(null)
+        setTodo('')
+    }
+
+    const handleTodoChange = (e: any) => {
+        setTodo(e.target.value)
+    }
+
+    const handleSubmitTodo = () => {
+        if(isEdit) {
+            dispatch(UpdateTodo({item: toEdit, data:todo, list: asyncTodos}))
+            setIsEdit(false)
+            setToEdit(null)
+        } else {
+            dispatch(StoreTodo({todo: todo, list: asyncTodos}))
+        }
+
+        setTodo('')
+    }
+
+    const handleDeleteTodo = (item) => {
+        dispatch(DeleteTodo({id: item, list: asyncTodos}))
+    }
+
+    const handleEditTodo = (item) => {
+        setTodo(item.title)
+        setIsEdit(true)
+        setToEdit(item)
+        dispatch(DeleteTodo({item: item, list: asyncTodos}))
     }
 
     return (
@@ -31,19 +67,33 @@ export default function Home() {
                 </button>
                 <ul>
                     {asyncTodos.map((item: Todo) => (
-                        <li key={item.id}>{item.title}</li>
+                        <li key={item.id}>
+                            {item.title}
+                            <button type="button" onClick={() => handleEditTodo(item)}>
+                                Edit
+                            </button> 
+                            <button type="button" onClick={() => handleDeleteTodo(item.id)}>
+                                delete
+                            </button>
+                        </li>
                     ))}
                 </ul>
+                <div>
+                    <input value={todo} type="text" placeholder="New Todo" onChange={handleTodoChange} />
+                    <button type="button" onClick={handleSubmitTodo} disabled={loading}>
+                        { isEdit ? 'Update' :  'Submit'}
+                    </button>
+                </div>
             </div>
             <div>
                 <h2>Sync Reducer</h2>
-                <div>
+                {/* <div>
                     <ul>
                         {syncTodos.map((todos) => (
                             <li>{todos}</li>
                         ))}
                     </ul>
-                </div>
+                </div> */}
             </div>
         </div>
     )
